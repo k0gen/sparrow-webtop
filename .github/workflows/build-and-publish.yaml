@@ -1,9 +1,9 @@
-name: Build and Publish Docker Image
+name: Build and Publish Multi-Arch Docker Image
 
 on:
   push:
-    branches: [ main ]
-    tags: [ "v*.*.*" ]
+    branches: [main]
+    tags: ["v*.*.*"]
 
 # Let the job push to GHCR with GITHUB_TOKEN
 permissions:
@@ -37,52 +37,27 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image (main branch)
+      - name: Build and push multi-arch Docker image (main branch)
         if: github.ref_type == 'branch' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:main
             ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:${{ github.sha }}
 
-      - name: Build and push Docker image (tag)
+      - name: Build and push multi-arch Docker image (tag)
         if: github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v')
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:${{ steps.vars.outputs.version }}
             ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:${{ github.sha }}
             ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:latest
-
-      - name: Build and push Docker image - arm64v8 (main branch)
-        if: github.ref_type == 'branch' && github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.aarch64
-          platforms: linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:arm64v8-main
-            ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:arm64v8-${{ github.sha }}
-
-      - name: Build and push Docker image - arm64v8 (tag)
-        if: github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v')
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Dockerfile.aarch64
-          platforms: linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:arm64v8-${{ steps.vars.outputs.version }}
-            ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:arm64v8-${{ github.sha }}
-            ghcr.io/${{ steps.vars.outputs.owner }}/sparrow-webtop:arm64v8-latest
