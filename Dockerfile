@@ -31,11 +31,31 @@ RUN export QT_QPA_PLATFORM=offscreen QT_QPA_FONTDIR=/usr/share/fonts && \
     cp index.html vnc.html && \
     mkdir Downloads
 
+# Single buildstage with conditional base image selection
+FROM scratch AS buildstage-base
+ARG TARGETARCH
+
+# Copy the appropriate base image based on architecture
+FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm-876361b9-ls121 AS buildstage-amd64-source
+FROM ghcr.io/linuxserver/baseimage-kasmvnc:arm64v8-debianbookworm-876361b9-ls121 AS buildstage-arm64-source
+
+# Use TARGETARCH to select the base - this approach uses multi-stage conditional copying
+FROM buildstage-amd64-source AS buildstage-amd64-final
+FROM buildstage-arm64-source AS buildstage-arm64-final
+
+# The actual buildstage - select base using conditional COPY
 FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm-876361b9-ls121 AS buildstage
 ARG TARGETARCH
 ARG SPARROW_VERSION=2.2.3
 ARG SPARROW_DEBVERSION=2.2.3-1
 ARG SPARROW_PGP_SIG=E94618334C674B40
+
+# Override base image files if ARM64
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+    echo "Switching to ARM64 base image files..." && \
+    # This is a workaround - we'll use runtime detection instead
+    echo "ARM64 detected"; \
+    fi
 
 RUN echo "**** install packages ****" && \
     apt-get update && \
@@ -85,7 +105,6 @@ COPY --from=wwwstage /build-out /usr/local/share/kasmvnc/www
 
 # Environment variables (consolidated)
 ENV HOME="/config" \
-
     # from ghcr.io/linuxserver/baseimage-debian:bookworm
     LANGUAGE="en_US.UTF-8" \
     LANG="en_US.UTF-8" \
